@@ -38,14 +38,14 @@ class Crawler
       uri = "#{BASE_URL}/#{category}/#{ENDPOINT}"
       response = open(uri, "User-Agent" => USER_AGENT).read
       @html_doc = Nokogiri::HTML(response)
-      get_links
+      links = get_links
 
-      get_receipes
+      get_receipes(links)
     end
   end
 
-  def get_receipes
-    @receipe_links.each do |receipe_link|
+  def get_receipes(links)
+    links.each do |receipe_link|
       @receipe_uri = receipe_link
       begin
         response = open(receipe_link, "User-Agent" => USER_AGENT).read
@@ -68,8 +68,15 @@ class Crawler
     receipe[:receipe_info] = get_receipe_info
     receipe[:ingredients] = get_ingredients
     receipe[:instructions] = get_instructions
+    receipe[:bookmarkCount] = get_likes
 
     receipe
+  end
+
+  def get_likes
+    text = @html_doc.css('div.like span.label').first.text
+    text_match = text.match(/\n(\d*)\.?(\d*)\n/)
+    "#{text_match[1]}#{text_match[2]}"
   end
 
   def get_receipe_name
@@ -148,9 +155,13 @@ class Crawler
 
 
   def get_links
+    links = []
     @html_doc.css('div.listing ul a').each do |link|
-      @receipe_links << "#{BASE_URL}#{link['href']}"
+      link = "#{BASE_URL}#{link['href']}"
+      puts "LINK #{link}"
+      links << link
     end
+    links
   end
 end
 
